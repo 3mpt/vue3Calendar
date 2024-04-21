@@ -2,7 +2,6 @@
   <div class="login_container">
     <h1 class="title">电子日历管理系统</h1>
     <div class="login_box">
-      
       <!-- 头像 -->
       <div class="avatar_box">
         <img src="../assets/rlogo.jpg" alt="" />
@@ -71,143 +70,140 @@
     </el-dialog>
   </div>
 </template>
-<script>
-import axios from 'axios'
-
-export default {
-  data() {
-    //验证邮箱规则
-    var checkEmail = (rule, value, cb) => {
-      const regEmail =
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-      if (regEmail.test(value)) {
-        return cb();
-      }
-      cb(new Error("请输入合法邮箱"));
-    };
-    return {
-      //这是登录表单数据绑定对象
-      loginFORM: {
-        id: "",
-        username: "",
-        password: "",
-      },
-      loginFORMRules: {
-        //用户名校验
-        username: [
-          { required: true, message: "请输入用户名", trigger: "blur" },
-          {
-            min: 1,
-            max: 10,
-            message: "长度在 1 到 10 个字符",
-            trigger: "blur",
-          },
-        ],
-
-        //密码校验
-        password: [
-          { required: true, message: "请输入密码", trigger: "blur" },
-          {
-            min: 6,
-            max: 15,
-            message: "长度在 6 到 15 个字符",
-            trigger: "blur",
-          },
-        ],
-      },
-      addDialogVisible: false,
-      value: "",
-      addForm: {
-        username: "",
-        password: "",
-        email: "",
-      },
-      addFormRules: {
-        username: [
-          { required: true, message: "请输入用户名", trigger: "blur" },
-          {
-            min: 1,
-            max: 10,
-            message: "请输入1-10个字符",
-            trigger: "blur",
-          },
-        ],
-        password: [
-          { required: true, message: "请输入密码", trigger: "blur" },
-          {
-            min: 6,
-            max: 15,
-            message: "请输入6-15个字符",
-            trigger: "blur",
-          },
-        ],
-        email: [
-          { required: true, message: "请输入邮箱", trigger: "blur" },
-          {
-            validator: checkEmail,
-            trigger: "blur",
-          },
-        ],
-      },
-    };
-  },
-  methods: {
-    //点击重置按钮重置表单
-    resetLoginFORM() {
-      //console.log(this) //打印主键实例
-      this.$refs.loginFORMRef.resetFields();
-    },
-    //登录
-    login() {
-      this.$refs.loginFORMRef.validate(async (valid) => {
-        if (!valid) return;
-        const { data: res } = await axios.post("/login", this.loginFORM);
-        // console.log(res)
-        if (res.code == 200) {
-          console.log(res);
-
-          this.$message.success(res.msg);
-          // console.log(typeof res.role)
-          //1.将登录成功后的token，保存到客户端的sessionStorage中
-          //  1.1 项目中除了登录之外的API接口，必须登录成功后才能访问
-          //  1.2 token只应在当前网站打开期间生效，所以将token保存在 sessionStorage中
-
-          this.$store.commit("setUserRole", res.role);
-          this.$store.commit("setUserId", res.user_id);
-          window.sessionStorage.setItem("token", res.token);
-          window.sessionStorage.setItem("activePath", "/welcome");
-          // this.$store.commit('setUserRole', res.data[0].role);
-          /* console.log(this.$store.state.userRole) */
-          //2 通过编程式导航跳转到后台主页，路由地址/Home
-          this.$router.push("/home");
-        } else if (res.code == 500) {
-          console.log(res);
-          return this.$message.error(res.msg);
-        }
-      });
-    },
-    addDialogClosed() {
-      this.$refs.addFormRef.resetFields();
-    },
-    //注册
-    addUser() {
-      this.$refs.addFormRef.validate(async (valid) => {
-        /* console.log(valid) */
-        if (!valid) return;
-        // console.log(this.addForm)
-
-        //可以发起添加用户的网络请求
-        const { data: res } = await this.$http.post("/register", this.addForm);
-        // console.log('res', res)
-        if (res.code !== 200) {
-          return this.$message.error(res.msg);
-        }
-        this.$message.success(res.msg);
-        this.addDialogVisible = false;
-      });
-    },
-  },
+<script setup>
+import { ElMessage } from "element-plus";
+import { ref } from "vue";
+import axios from "axios";
+import { useStore } from "vuex"; // 导入 useStore 函数
+import { useRouter } from "vue-router"; // 导入 useRouter 函数
+const store = useStore(); // 获取 store 对象
+const router = useRouter();
+var checkEmail = (rule, value, cb) => {
+  const regEmail =
+    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  if (regEmail.test(value)) {
+    return cb();
+  }
+  cb(new Error("请输入合法邮箱"));
 };
+const loginFORM = ref({
+  id: "",
+  username: "",
+  password: "",
+});
+const loginFORMRules = ref({
+  //用户名校验
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    {
+      min: 1,
+      max: 10,
+      message: "长度在 1 到 10 个字符",
+      trigger: "blur",
+    },
+  ],
+
+  //密码校验
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" },
+    {
+      min: 6,
+      max: 15,
+      message: "长度在 6 到 15 个字符",
+      trigger: "blur",
+    },
+  ],
+});
+
+const value = ref("");
+
+const addFormRules = ref({
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    {
+      min: 1,
+      max: 10,
+      message: "请输入1-10个字符",
+      trigger: "blur",
+    },
+  ],
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" },
+    {
+      min: 6,
+      max: 15,
+      message: "请输入6-15个字符",
+      trigger: "blur",
+    },
+  ],
+  email: [
+    { required: true, message: "请输入邮箱", trigger: "blur" },
+    {
+      validator: checkEmail,
+      trigger: "blur",
+    },
+  ],
+});
+const loginFORMRef = ref(null);
+const resetLoginFORM = () => {
+  //console.log(this) //打印主键实例
+  ElMessage.success("sdasd");
+
+  loginFORMRef.value.resetFields();
+};
+const login = () => {
+  loginFORMRef.value.validate(async (valid) => {
+    if (!valid) return;
+    console.log(loginFORM.value);
+
+    const { data: res } = await axios.post("/login", loginFORM.value);
+    // console.log(res)
+    if (res.code == 200) {
+      console.log(res);
+      ElMessage.success(res.msg);
+      // console.log(typeof res.role)
+      //1.将登录成功后的token，保存到客户端的sessionStorage中
+      //  1.1 项目中除了登录之外的API接口，必须登录成功后才能访问
+      //  1.2 token只应在当前网站打开期间生效，所以将token保存在 sessionStorage中
+      store.commit("setUserRole", res.role);
+      store.commit("setUserId", res.user_id);
+      window.sessionStorage.setItem("token", res.token);
+      window.sessionStorage.setItem("activePath", "/welcome");
+
+      //2 通过编程式导航跳转到后台主页，路由地址/Home
+      router.push("/home");
+    } else if (res.code == 500) {
+      console.log(res);
+      return ElMessage.error(res.msg);
+    }
+  });
+};
+const addForm = ref({
+  username: "",
+  password: "",
+  email: "",
+});
+const addDialogVisible = ref(false);
+const addFormRef = ref(null);
+const addUser = () => {
+  addFormRef.value.validate(async (valid) => {
+    /* console.log(valid) */
+    if (!valid) return;
+    // console.log(this.addForm)
+
+    //可以发起添加用户的网络请求
+    const { data: res } = await axios.post("/register", addForm.value);
+    
+    if (res.code !== 200) {
+      return ElMessage.error(res.msg);
+    }
+    ElMessage.success(res.msg);
+    addDialogVisible.value = false;
+  });
+};
+const addDialogClosed = ()=>{
+  addFormRef.value.resetFields();
+}
 </script>
 
 <style lang="less" scoped>

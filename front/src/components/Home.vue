@@ -1,7 +1,8 @@
 <template>
-  <el-container class="el-cont" style="height: 100%">
+  <el-container class="el-cont">
     <el-header>
       <div>
+        <i class="el-icon-edit"></i>
         <span>电子日历系统</span>
       </div>
       <div>
@@ -23,14 +24,16 @@
           :default-active="activePath"
         >
           <!-- 一级菜单 -->
-          <el-submenu
+          <el-sub-menu
             :index="item.id + ''"
             v-for="item in filteredMenuList"
             :key="item.id"
           >
             <!-- 模板 -->
-            <template slot="title">
-              <i :class="iconObj[item.id]"></i>
+            <template #title>
+              <el-icon :size="20">
+                <component :is="iconObj[item.id]" />
+              </el-icon>
               <span>{{ item.authName }}</span>
             </template>
             <!-- 二级菜单 -->
@@ -41,12 +44,14 @@
               :key="subItem.id"
               @click="saveNavState('/' + subItem.path)"
             >
-              <template slot="title">
-                <i class="el-icon-menu"></i>
+              <template #title>
+                <el-icon :size="20">
+                <Menu/>
+              </el-icon>
                 <span>{{ subItem.authName }}</span>
               </template>
             </el-menu-item>
-          </el-submenu>
+          </el-sub-menu>
         </el-menu>
       </el-aside>
 
@@ -98,12 +103,12 @@ export default {
         },
       ],
       iconObj: {
-        125: "el-icon-user-solid",
-        103: "el-icon-s-promotion",
-        101: "iconfont icon-shangpin",
-        102: "el-icon-s-comment",
-        145: "el-icon-s-claim",
-        110: "el-icon-s-tools",
+        125: "UserFilled",
+        103: "Notebook",
+        101: "UserFilled",
+        102: "UserFilled",
+        145: "Calendar",
+        110: "UserFilled",
       },
       isCollapse: false,
       //被激活的链接地址
@@ -116,7 +121,6 @@ export default {
   },
   created() {
     this.getUserId();
-    this.filteredMenuList;
     this.filteredSubList;
     this.activePath = window.sessionStorage.getItem("activePath");
   },
@@ -161,7 +165,7 @@ export default {
 
 <style lang="less" scoped>
 .el-cont {
-  height: 100%;
+  height: 100vh;
 }
 .el-header {
   background-color: #373d41;

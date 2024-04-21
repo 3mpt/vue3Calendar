@@ -10,8 +10,13 @@
   },
   "dependencies": {
     "@element-plus/icons": "^0.0.11",
+    "@fullcalendar/core": "^6.1.11",
+    "@fullcalendar/rrule": "^6.1.11",
+    "@fullcalendar/vue3": "^6.1.11",
     "axios": "^1.6.8",
     "element-plus": "^2.7.1",
+    "fullcalendar": "^6.1.11",
+    "moment": "^2.30.1",
     "vue": "^3.4.21",
     "vue-router": "^4.0.13",
     "vuex": "^4.0.2",

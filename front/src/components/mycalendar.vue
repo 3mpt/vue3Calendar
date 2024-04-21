@@ -94,14 +94,14 @@
   
   <script>
 // 引入已经安装好的，项目中所需要的 FullCalendar 插件
-import FullCalendar from '@fullcalendar/vue'
+import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import rrulePlugin from '@fullcalendar/rrule'
-
-
+import axios from "axios";
+import moment from 'moment'
 export default {
   name: "my-calendar",
   components: {
@@ -309,7 +309,7 @@ export default {
     async getlist() {
       this.userid = this.$store.getters.getUserId;
        //先拿id
-      const { data: res } = await this.$http.post("/get_event", {
+      const { data: res } = await axios.post("/get_event", {
         user_id: this.userid
       });//发请求
       // console.log('请求结果', res)
@@ -422,13 +422,13 @@ export default {
       if (this.form.id === undefined || this.form.id == '') {
         //新增
         // this.form.id = res.id;
-        const { data: res } = await this.$http.post("/add_event", this.form);
+        const { data: res } = await axios.post("/add_event", this.form);
         if (res.code !== 200) {
           return this.$message.error(res.msg)
         }
         this.$message.success(res.msg)
       } else { //修改
-        const { data: res } = await this.$http.post("/update_event", this.form);
+        const { data: res } = await axios.post("/update_event", this.form);
         // console.log(res)
         if (res.code !== 200) {
           return this.$message.error(res.msg)
@@ -446,10 +446,9 @@ export default {
       let calendarApi = this.$refs.myCalendar.getApi();
       let Events = calendarApi.getEvents()
       let hasRecentEvent = false; // 定义一个变量，表示是否有近期活动
-      let time = this.$moment().format('YYYY-MM-DDTHH:mm:ss');
+      let time = moment().format('YYYY-MM-DDTHH:mm:ss');
       // console.log('所有事件', Events);
       for (let event of Events) {
-
         // 创建一个新的 Date 对象，表示当前系统时间
         let now = new Date(time);
         let nowstamp = now.getTime();//当前时间戳
@@ -480,7 +479,7 @@ export default {
       }
     },
     async delEvent() {
-      const { data: res } = await this.$http.post("/del_event", { id: this.form.id });
+      const { data: res } = await axios.post("/del_event", { id: this.form.id });
       if (res.code !== 200) {
         return this.$message.error(res.msg)
       }

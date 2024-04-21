@@ -7,11 +7,11 @@
       <el-breadcrumb-item>用户列表</el-breadcrumb-item>
     </el-breadcrumb>
     <!-- 卡片区域 -->
-    <el-card class="box-card">
+    <el-card class="box-card" style="margin-top: 20px; height: 85vh">
       <div>
         <!-- 分栏间隔 -->
         <el-row :gutter="20">
-          <el-col :span="6"
+          <el-col :span="8"
             ><div class="grid-content bg-purple">
               <el-input
                 placeholder="请输入用户名"
@@ -19,13 +19,13 @@
                 clearable
                 @clear="getUserList"
               >
-                <el-button
-                  slot="append"
-                  icon="el-icon-search"
-                  @click="getUserList"
-                ></el-button>
-              </el-input></div
-          ></el-col>
+                <template #append>
+                  <el-button @click="getUserList">搜索</el-button>
+                </template>
+              </el-input>
+            </div></el-col
+          >
+
           <el-col :span="6"
             ><div class="grid-content bg-purple">
               <el-button type="primary" @click="addDialogVisible = true"
@@ -43,20 +43,25 @@
           ></el-table-column>
           <el-table-column prop="username" label="用户名"> </el-table-column>
           <el-table-column prop="email" label="邮箱"> </el-table-column>
-          <el-table-column prop="role" label="角色">
-            <template slot-scope="{ row }">
-              {{ row.role === 1 ? "管理员" : "普通用户" }}
-            </template>
+          <el-table-column
+            prop="role"
+            label="角色"
+            :formatter="roleShow"
+          ></el-table-column>
+          <el-table-column
+            prop="create_time"
+            label="创建时间"
+            :formatter="createTimeShow"
+          >
           </el-table-column>
-          <el-table-column prop="create_time" label="创建时间">
-            <template slot-scope="{ row }">
-              {{ formatDate(row.create_time) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="last_time" label="最后一次登陆时间">
-            <template slot-scope="{ row }">
+          <el-table-column
+            prop="last_time"
+            label="最后一次登陆时间"
+            :formatter="lastTimeShow"
+          >
+            <!-- <template slot-scope="{ row }">
               {{ formatDate(row.last_time) }}
-            </template>
+            </template> -->
           </el-table-column>
           <el-table-column label="操作" width="180px">
             <template v-slot="scope">
@@ -94,7 +99,7 @@
       <!-- 弹出框 -->
       <el-dialog
         title="添加用户"
-        :visible.sync="addDialogVisible"
+        v-model="addDialogVisible"
         width="50%"
         @close="addDialogClosed"
       >
@@ -121,7 +126,7 @@
       </el-dialog>
       <el-dialog
         title="修改用户"
-        :visible.sync="editDialogVisible"
+        v-model="editDialogVisible"
         width="50%"
         @close="editDialogClosed"
       >
@@ -160,6 +165,7 @@
 </template>
 
 <script>
+import axios from "axios";
 export default {
   data() {
     //验证邮箱规则
@@ -194,25 +200,38 @@ export default {
         password: "",
         email: "",
       },
-      options: [{
-        value: 0,
-        label: '普通用户'
-      }, {
-        value: 1,
-        label: '管理员'
-      }],
+      options: [
+        {
+          value: 0,
+          label: "普通用户",
+        },
+        {
+          value: 1,
+          label: "管理员",
+        },
+      ],
       // value: '',
       //添加表单的验证规则和对象
       addFormRules: {
         username: [
           { required: true, message: "请输入用户名", trigger: "blur" },
-          { min: 1, max: 10, message: "长度在 1 到 10 个字符", trigger: "blur" },
+          {
+            min: 1,
+            max: 10,
+            message: "长度在 1 到 10 个字符",
+            trigger: "blur",
+          },
         ],
 
         //密码校验
         password: [
           { required: true, message: "请输入密码", trigger: "blur" },
-          { min: 6, max: 15, message: "长度在 6 到 15 个字符", trigger: "blur" },
+          {
+            min: 6,
+            max: 15,
+            message: "长度在 6 到 15 个字符",
+            trigger: "blur",
+          },
         ],
         email: [
           { required: true, message: "请输入邮箱", trigger: "blur" },
@@ -220,22 +239,30 @@ export default {
             validator: checkEmail,
             trigger: "blur",
           },
-        ]
-
+        ],
       },
       editDialogVisible: false,
-      editForm: {
-      },
+      editForm: {},
       editFormRules: {
         username: [
           { required: true, message: "请输入用户名", trigger: "blur" },
-          { min: 1, max: 10, message: "长度在 1 到 10 个字符", trigger: "blur" },
+          {
+            min: 1,
+            max: 10,
+            message: "长度在 1 到 10 个字符",
+            trigger: "blur",
+          },
         ],
 
         //密码校验
         password: [
           { required: true, message: "请输入密码", trigger: "blur" },
-          { min: 6, max: 15, message: "长度在 6 到 15 个字符", trigger: "blur" },
+          {
+            min: 6,
+            max: 15,
+            message: "长度在 6 到 15 个字符",
+            trigger: "blur",
+          },
         ],
         email: [
           { required: true, message: "请输入邮箱", trigger: "blur" },
@@ -243,7 +270,7 @@ export default {
             validator: checkEmail,
             trigger: "blur",
           },
-        ]
+        ],
       },
       //需要被分配角色的用户信息
       UserInfo: {},
@@ -251,38 +278,36 @@ export default {
       rolesList: [],
       //已选中的角色id
       selectedRoleId: "",
-
-
     };
   },
-  watch: {
-
-  },
+  watch: {},
   //创建生命周期对象
   created() {
     this.getUserList();
   },
   methods: {
     async getUserList() {
-      if (this.queryInfo.query == '') {
+      if (this.queryInfo.query == "") {
         //调用请求，第一个参数是请求地址
-        const { data: res } = await this.$http.get("/get_user");
+        const { data: res } = await axios.get("/get_user");
         if (res.code !== 200) {
           return this.$message.error("获取用户列表失败");
         }
         this.$message.success("获取用户列表成功");
-        this.userlist = res.data
+        this.userlist = res.data;
       } else {
-        const { data: res } = await this.$http.post("/get_user", {
-          username: this.queryInfo.query
+        const { data: res } = await axios.post("/get_user", {
+          username: this.queryInfo.query,
         });
+        this.queryInfo.query = "";
         if (res.code !== 200) {
           return this.$message.error("获取用户列表失败");
         }
         this.$message.success("获取用户列表成功");
-        this.userlist = res.data
+
+        this.userlist = res.data;
       }
-      this.userlist.forEach(item => {
+      this.userlist.forEach((item) => {
         if (item.status === 0) {
           item.status = false;
           // 返回false
@@ -290,8 +315,7 @@ export default {
           item.status = true;
           // 返回true
         }
-      })
-
+      });
     },
     //监听Pagesize改变的事件
     handleSizeChange(newSize) {
@@ -315,7 +339,7 @@ export default {
         if (!valid) return;
         // console.log(this.addForm)
         //可以发起添加用户的网络请求
-        const { data: res } = await this.$http.post("/register", this.addForm);
+        const { data: res } = await axios.post("/register", this.addForm);
         if (res.code !== 200) {
           return this.$message.error("添加用户失败");
         }
@@ -326,7 +350,7 @@ export default {
     },
     //显示编辑用户的对话框
     async showEditDialog(id) {
-      const selectedItem = this.userlist.find(item => item.id === id);
+      const selectedItem = this.userlist.find((item) => item.id === id);
       if (selectedItem) {
         this.editForm = { ...selectedItem, user_id: selectedItem.id };
         // 打开编辑对话框或执行其他操作
@@ -343,12 +367,11 @@ export default {
     },
     editUserInfo() {
       this.$refs.editFormRef.validate(async (valid) => {
-
         if (!valid) return;
         // this.editForm.status = this.editForm.status ? 1 : 0;
         // console.log('编辑表单提交', this.editForm)
         //可以发起添加用户的网络请求
-        const { data: res } = await this.$http.post("/update_user", this.editForm);
+        const { data: res } = await axios.post("/update_user", this.editForm);
 
         if (res.code !== 200) {
           return this.$message.error("更新用户信息失败");
@@ -360,7 +383,7 @@ export default {
     },
     //滑块改变
     async StateChanged(id) {
-      const selectedItem = this.userlist.find(item => item.id == id);
+      const selectedItem = this.userlist.find((item) => item.id == id);
       // console.log(selectedItem.status)
       if (selectedItem) {
         this.editForm = { ...selectedItem, user_id: selectedItem.id };
@@ -372,38 +395,45 @@ export default {
 
       this.editForm.status = this.editForm.status ? 1 : 0;
       // console.log('666', this.editForm)
-      const { data: res } = await this.$http.post("/update_user", this.editForm);
+      const { data: res } = await axios.post("/update_user", this.editForm);
       if (res.code !== 200) {
         return this.$message.error("禁用失败");
       }
       this.$message.success("修改成功");
       // console.log(this.editForm)
       this.getUserList();
-
     },
     //格式化日期
     formatDate(dateTimeString) {
       const date = new Date(dateTimeString);
       const year = date.getFullYear();
-      const month = ('0' + (date.getMonth() + 1)).slice(-2);
-      const day = ('0' + date.getDate()).slice(-2);
-      const hours = ('0' + date.getHours()).slice(-2);
-      const minutes = ('0' + date.getMinutes()).slice(-2);
-      const seconds = ('0' + date.getSeconds()).slice(-2);
+      const month = ("0" + (date.getMonth() + 1)).slice(-2);
+      const day = ("0" + date.getDate()).slice(-2);
+      const hours = ("0" + date.getHours()).slice(-2);
+      const minutes = ("0" + date.getMinutes()).slice(-2);
+      const seconds = ("0" + date.getSeconds()).slice(-2);
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
+    },
+    roleShow(row) {
+      return row.role === 1 ? "管理员" : "普通用户";
+    },
+    createTimeShow(row) {
+      return this.formatDate(row.create_time);
+    },
+    lastTimeShow(row) {
+      return this.formatDate(row.last_time);
+    },
   },
   computed: {
     //将editForm.role数字转为标签
     roleLabel() {
       const role = this.editForm.role; // 假设这是从数据库获取的用户角色值
 
-      const option = this.options.find(item => item.value === role);
+      const option = this.options.find((item) => item.value === role);
 
-      return option ? option.label : '';
+      return option ? option.label : "";
     },
-
-  }
+  },
 };
 </script>
 

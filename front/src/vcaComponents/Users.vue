@@ -175,16 +175,7 @@ export default {
       }
       cb(new Error("请输入合法邮箱"));
     };
-    //手机号验证
-    var checkMobile = (rule, value, cb) => {
-      const regMobile = /^(?:(?:\+|00)86)?1[3-9]\d{9}$/;
-      if (regMobile.test(value)) {
-        return cb();
-      }
-      cb(new Error("请输入合法手机号"));
-    };
-
-    return {
+   return {
       //获取用户列表参数对象
       queryInfo: {
         query: "",

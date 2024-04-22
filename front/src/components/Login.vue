@@ -114,9 +114,6 @@ const loginFORMRules = ref({
     },
   ],
 });
-
-const value = ref("");
-
 const addFormRules = ref({
   username: [
     { required: true, message: "请输入用户名", trigger: "blur" },

@@ -20,7 +20,7 @@
                 @clear="getEvenList"
               >
                 <template #append>
-                  <el-button @click="getUserList">搜索</el-button>
+                  <el-button @click="getEvenList">搜索</el-button>
                 </template>
               </el-input>
             </div></el-col
@@ -197,270 +197,250 @@
   </div>
 </template>
   
-  <script>
+  <script setup>
 import axios from "axios";
-export default {
-  data() {
-    return {
-      queryInfo: {
-        query: "",
-      },
-      evenlist: [],
-      userlist: [],
-      addDialogVisible: false,
-      optTitle: "添加事件",
-      dialogFormVisible: false,
-      form: {
-        user_id: "",
-        id: null, //事件id
-        title: "", //事件标题
-        area: "", //地点
-        detail: "", //描述
-        duration: "10:00", //事件持续时间
-        more: false, //是否为周期时间 默认为false
-        rrule: {
-          freq: "weekly", //rrule是周期时间的一个对象 freq为按xx为周期有['weekly','monthly','yearly']
-          interval: 1, //周期循环的间隔,1就是没有间隔 2就是隔一个周期加一个时间
-          dtstart: "", //开始时间
-          until: "", // 周期事件结束时间,空的时候就是无限周期
-          count: 1, //周期循环几次,1的时候代表循环一次就是普通事件,""的时候就是周期事件
-        },
-      },
-      defaultform: {
-        user_id: "",
-        id: null,
-        title: "",
-        area: "",
-        detail: "",
-        duration: "10:00",
-        more: false,
-        rrule: {
-          freq: "weekly",
-          interval: 1,
-          dtstart: "",
-          until: "",
-          count: 1,
-        },
-      },
-    };
+
+import { ref, computed, onMounted } from "vue";
+import { ElMessage } from "element-plus";
+const queryInfo = ref({
+  query: "",
+});
+const evenlist = ref([]);
+const userlist = ref([]);
+const optTitle = ref("添加事件");
+const dialogFormVisible = ref(false);
+const form = ref({
+  user_id: "",
+  id: null, //事件id
+  title: "", //事件标题
+  area: "", //地点
+  detail: "", //描述
+  duration: "10:00", //事件持续时间
+  more: false, //是否为周期时间 默认为false
+  rrule: {
+    freq: "weekly", //rrule是周期时间的一个对象 freq为按xx为周期有['weekly','monthly','yearly']
+    interval: 1, //周期循环的间隔,1就是没有间隔 2就是隔一个周期加一个时间
+    dtstart: "", //开始时间
+    until: "", // 周期事件结束时间,空的时候就是无限周期
+    count: 1, //周期循环几次,1的时候代表循环一次就是普通事件,""的时候就是周期事件
   },
-  //创建生命周期对象
-  created() {
-    this.getEvenList();
-    this.getUserList();
+});
+const defaultform = ref({
+  user_id: "",
+  id: null,
+  title: "",
+  area: "",
+  detail: "",
+  duration: "10:00",
+  more: false,
+  rrule: {
+    freq: "weekly",
+    interval: 1,
+    dtstart: "",
+    until: "",
+    count: 1,
   },
-  methods: {
-    async getEvenList() {
-      //   console.log('查寻信息', this.queryInfo)
-      if (this.queryInfo.query == "") {
-        //调用请求，第一个参数是请求地址
-        const { data: res } = await axios.get("/get_all_events");
+});
+const getEvenList = async () => {
+  if (queryInfo.value.query == "") {
+    //调用请求，第一个参数是请求地址
+    const { data: res } = await axios.get("/get_all_events");
 
-        if (res.code !== 200) {
-          return this.$message.error("获取事件列表失败");
-        }
-        this.$message.success("获取事件列表成功");
-        this.evenlist = res.data;
-      } else {
-        const { data: res } = await axios.post("/get_all_events", {
-          title: this.queryInfo.query,
-        });
+    if (res.code !== 200) {
+      return ElMessage.error("获取事件列表失败");
+    }
+    ElMessage.success("获取事件列表成功");
+    evenlist.value = res.data;
+  } else {
+    console.log("查寻信息", queryInfo.value.query);
+    const { data: res } = await axios.post("/get_all_events", {
+      title: queryInfo.value.query,
+    });
 
-        if (res.code !== 200) {
-          return this.$message.error("获取事件列表失败");
-        }
-        this.$message.success("获取事件列表成功");
-        this.evenlist = res.data;
-      }
-    },
-    async getUserList() {
-      const { data: res } = await axios.post("/get_user", {
-        username: this.queryInfo.query,
-      });
-      if (res.code !== 200) {
-        return this.$message.error("获取事件列表失败");
-      }
-      this.$message.success("获取事件列表成功");
-      this.userlist = res.data;
-    },
-
-    //显示新增事件的对话框
-    showAddDialog() {
-      //数据初始化
-      this.form = { ...this.defaultform };
-
-      this.optTitle = "新增事件";
-      this.form.rrule.dtstart = "";
-      this.form.duration = "10:00";
-      let durationArr = this.form.duration.split(":");
-      this.form.duration = parseInt(durationArr[0], 10);
-
-      //   console.log('this.form:', this.form)
-      //   console.log('this.defaultform', this.defaultform)
-      this.dialogFormVisible = true;
-    },
-    //显示编辑事件的对话框
-    showEditDialog(info) {
-      this.optTitle = "修改事件";
-      this.form.id = info.id;
-      this.form.title = info.title;
-      this.form.detail = info.detail;
-      this.form.area = info.area;
-      this.form.more = info.more;
-      this.form.duration = info.duration;
-      this.form.user_id = info.user_id;
-      this.form.rrule.freq = info.freq;
-      this.form.rrule.interval = info.interval;
-      this.form.rrule.dtstart = info.dtstart;
-      this.form.rrule.until = info.until;
-      this.form.rrule.count = info.count;
-      if (typeof this.form.duration != "number") {
-        let durationArr = this.form.duration.split(":");
-        this.form.duration = parseInt(durationArr[0], 10);
-      }
-      this.dialogFormVisible = true;
-    },
-    //监听对话框close事件
-    DialogClosed() {
-      this.form = { ...this.defaultform };
-      this.$refs.FormRef.resetFields();
-      this.getEvenList();
-    },
-    async saveEvent() {
-      //   this.form.user_id = this.userid
-      //判断是否为周期事件
-      if (this.form.more == false) {
-        this.form.rrule.count = 1;
-      } else {
-        delete this.form.rrule.count;
-      }
-      //将持续时间字段格式化
-      if (typeof this.form.duration === "number") {
-        this.form.duration = this.form.duration.toString() + ":00";
-      }
-      if (this.form.rrule.until === "") {
-        delete this.form.rrule.until;
-      }
-
-      if (
-        this.form.id === undefined ||
-        this.form.id == "" ||
-        this.form.id === null
-      ) {
-        //新增
-
-        const { data: res } = await axios.post("/add_event", this.form);
-        if (res.code !== 200) {
-          return this.$message.error(res.msg);
-        }
-        this.$message.success(res.msg);
-      } else {
-        //修改
-        const { data: res } = await axios.post("/update_event", this.form);
-
-        if (res.code !== 200) {
-          return this.$message.error(res.msg);
-        }
-        this.$message.success(res.msg);
-      }
-      this.dialogFormVisible = false;
-      this.form = { ...this.defaultform };
-    },
-    async delEvent() {
-      const { data: res } = await axios.post("/del_event", {
-        id: this.form.id,
-      });
-      if (res.code !== 200) {
-        return this.$message.error(res.msg);
-      }
-      this.$message.success(res.msg);
-      this.dialogFormVisible = false;
-      this.getEvenList();
-    },
-    formatDuration(durationString) {
-      const hours = durationString.split(":");
-      return `${parseInt(hours)}小时`;
-    },
-    //格式化日期
-    formatDate(dateTimeString) {
-      const date = new Date(dateTimeString);
-      const year = date.getFullYear();
-      const month = ("0" + (date.getMonth() + 1)).slice(-2);
-      const day = ("0" + date.getDate()).slice(-2);
-      const hours = ("0" + date.getHours()).slice(-2);
-      const minutes = ("0" + date.getMinutes()).slice(-2);
-      const seconds = ("0" + date.getSeconds()).slice(-2);
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    },
-    formatFreq(freq) {
-      switch (freq) {
-        case "weekly":
-          return "每周";
-        case "monthly":
-          return "每月";
-        case "yearly":
-          return "每年";
-        default:
-          return "";
-      }
-    },
-    endDate(until) {
-      //先判断是不是为空
-      if (until == null) {
-        //空是永久事件
-        return "永久事件";
-      } else {
-        return this.formatDate(until);
-      }
-    },
-    endDataFalse(info) {
-      let dtstart = new Date(info.dtstart);
-      let [hours1, minutes1] = info.duration.split(":");
-      dtstart.setMinutes(
-        dtstart.getMinutes() + parseInt(hours1) * 60 + parseInt(minutes1)
-      );
-      const date = dtstart;
-      const year = date.getFullYear();
-      const month = ("0" + (date.getMonth() + 1)).slice(-2);
-      const day = ("0" + date.getDate()).slice(-2);
-      const hours = ("0" + date.getHours()).slice(-2);
-      const minutes = ("0" + date.getMinutes()).slice(-2);
-      const seconds = ("0" + date.getSeconds()).slice(-2);
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    },
-    moreShow(row) {
-      return row.more ? "周期事件" : "普通事件";
-    },
-    durationShow(row) {
-      return this.formatDuration(row.duration);
-    },
-    freqShow(row) {
-      return row.more ? this.formatFreq(row.freq) : "普通事件";
-    },
-    intervalShow(row) {
-      return row.more ? row.interval + "次" : "普通事件";
-    },
-    dtstartShow(row) {
-      return this.formatDate(row.dtstart);
-    },
-    untilShow(row) {
-      return row.more ? this.endDate(row.until) : this.endDataFalse(row);
-    },
-  },
-  computed: {
-    //将editForm.role数字转为标签
-    userLabel() {
-      const role = this.editForm.role; // 假设这是从数据库获取的用户角色值
-
-      const option = this.options.find((item) => item.value === role);
-
-      return option ? option.label : "";
-    },
-  },
+    if (res.code !== 200) {
+      return ElMessage.error("获取事件列表失败");
+    }
+    ElMessage.success("获取事件列表成功");
+    evenlist.value = res.data;
+  }
 };
+const getUserList = async () => {
+  const { data: res } = await axios.post("/get_user", {
+    username: queryInfo.value.query,
+  });
+  if (res.code !== 200) {
+    return ElMessage.error("获取用户列表失败");
+  }
+  ElMessage.success("获取用户列表成功");
+  userlist.value = res.data;
+};
+const showAddDialog = () => {
+  //数据初始化
+  form.value = { ...defaultform.value };
+
+  optTitle.value = "新增事件";
+  form.value.rrule.dtstart = "";
+  form.value.duration = "10:00";
+  let durationArr = form.value.duration.split(":");
+  form.value.duration = parseInt(durationArr[0], 10);
+
+  //   console.log('form.value:', form.value)
+  //   console.log('this.defaultform', this.defaultform)
+  dialogFormVisible.value = true;
+};
+const showEditDialog = (info) => {
+  optTitle.value = "修改事件";
+  form.value.id = info.id;
+  form.value.title = info.title;
+  form.value.detail = info.detail;
+  form.value.area = info.area;
+  form.value.more = info.more;
+  form.value.duration = info.duration;
+  form.value.user_id = info.user_id;
+  form.value.rrule.freq = info.freq;
+  form.value.rrule.interval = info.interval;
+  form.value.rrule.dtstart = info.dtstart;
+  form.value.rrule.until = info.until;
+  form.value.rrule.count = info.count;
+
+  if (typeof form.value.duration != "number") {
+    let durationArr = form.value.duration.split(":");
+    form.value.duration = parseInt(durationArr[0], 10);
+  }
+  dialogFormVisible.value = true;
+};
+const FormRef = ref(null);
+const DialogClosed = () => {
+  form.value = { ...defaultform.value };
+  FormRef.value.resetFields();
+  getEvenList();
+};
+const saveEvent = async () => {
+  //   form.value.user_id = this.userid
+  //判断是否为周期事件
+  if (form.value.more == false) {
+    form.value.rrule.count = 1;
+  } else {
+    delete form.value.rrule.count;
+  }
+  //将持续时间字段格式化
+  if (typeof form.value.duration === "number") {
+    form.value.duration = form.value.duration.toString() + ":00";
+  }
+  if (form.value.rrule.until === "") {
+    delete form.value.rrule.until;
+  }
+
+  if (
+    form.value.id === undefined ||
+    form.value.id == "" ||
+    form.value.id === null
+  ) {
+    //新增
+
+    const { data: res } = await axios.post("/add_event", form.value);
+    if (res.code !== 200) {
+      return ElMessage.error(res.msg);
+    }
+    ElMessage.success(res.msg);
+  } else {
+    //修改
+    const { data: res } = await axios.post("/update_event", form.value);
+
+    if (res.code !== 200) {
+      return ElMessage.error(res.msg);
+    }
+    ElMessage.success(res.msg);
+  }
+  dialogFormVisible.value = false;
+  form.value = { ...defaultform.value };
+};
+const delEvent = async () => {
+  const { data: res } = await axios.post("/del_event", {
+    id: form.value.id,
+  });
+  if (res.code !== 200) {
+    return ElMessage.error(res.msg);
+  }
+  ElMessage.success(res.msg);
+  dialogFormVisible.value = false;
+  getEvenList();
+};
+const formatDuration = (durationString) => {
+  const hours = durationString.split(":");
+  return `${parseInt(hours)}小时`;
+};
+//格式化日期
+const formatDate = (dateTimeString) => {
+  const date = new Date(dateTimeString);
+  const year = date.getFullYear();
+  const month = ("0" + (date.getMonth() + 1)).slice(-2);
+  const day = ("0" + date.getDate()).slice(-2);
+  const hours = ("0" + date.getHours()).slice(-2);
+  const minutes = ("0" + date.getMinutes()).slice(-2);
+  const seconds = ("0" + date.getSeconds()).slice(-2);
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+const formatFreq = (freq) => {
+  switch (freq) {
+    case "weekly":
+      return "每周";
+    case "monthly":
+      return "每月";
+    case "yearly":
+      return "每年";
+    default:
+      return "";
+  }
+};
+const endDate = (until) => {
+  //先判断是不是为空
+  if (until == null) {
+    //空是永久事件
+    return "永久事件";
+  } else {
+    return formatDate(until);
+  }
+};
+const endDataFalse = (info) => {
+  let dtstart = new Date(info.dtstart);
+  let [hours1, minutes1] = info.duration.split(":");
+  dtstart.setMinutes(
+    dtstart.getMinutes() + parseInt(hours1) * 60 + parseInt(minutes1)
+  );
+  const date = dtstart;
+  const year = date.getFullYear();
+  const month = ("0" + (date.getMonth() + 1)).slice(-2);
+  const day = ("0" + date.getDate()).slice(-2);
+  const hours = ("0" + date.getHours()).slice(-2);
+  const minutes = ("0" + date.getMinutes()).slice(-2);
+  const seconds = ("0" + date.getSeconds()).slice(-2);
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+const moreShow = (row) => {
+  return row.more ? "周期事件" : "普通事件";
+};
+const durationShow = (row) => {
+  return formatDuration(row.duration);
+};
+const freqShow = (row) => {
+  return row.more ? formatFreq(row.freq) : "普通事件";
+};
+const intervalShow = (row) => {
+  return row.more ? row.interval + "次" : "普通事件";
+};
+const dtstartShow = (row) => {
+  return formatDate(row.dtstart);
+};
+const untilShow = (row) => {
+  return row.more ? endDate(row.until) : endDataFalse(row);
+};
+onMounted(() => {
+  getEvenList();
+  getUserList();
+});
 </script>
-  
-  <style lang='less' scoped>
+<style lang='less' scoped>
 .el-table {
   margin-top: 20px;
 }

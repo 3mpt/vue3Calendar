@@ -20,7 +20,7 @@
                 @clear="getEvenList"
               >
                 <template #append>
-                  <el-button @click="getUserList">搜索</el-button>
+                  <el-button @click="getEvenList">搜索</el-button>
                 </template>
               </el-input>
             </div></el-col
@@ -207,7 +207,6 @@ export default {
       },
       evenlist: [],
       userlist: [],
-      addDialogVisible: false,
       optTitle: "添加事件",
       dialogFormVisible: false,
       form: {

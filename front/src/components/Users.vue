@@ -123,7 +123,6 @@
           <el-form-item label="用户名" prop="username">
             <el-input v-model="editForm.username"></el-input>
           </el-form-item>
-
           <el-form-item label="邮箱" prop="email">
             <el-input v-model="editForm.email"></el-input>
           </el-form-item>
@@ -151,7 +150,7 @@
 <script setup>
 import axios from "axios";
 import { ref, computed, onMounted } from "vue";
-import { ElMessage, ElNotification } from "element-plus";
+import { ElMessage,  } from "element-plus";
 const checkEmail = (rule, value, cb) => {
   const regEmail =
     /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;

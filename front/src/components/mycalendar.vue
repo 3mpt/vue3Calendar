@@ -5,7 +5,7 @@
     <FullCalendar ref="myCalendar" :options="calendarOptions" />
     <el-dialog
       :title="optTitle"
-      :visible.sync="dialogFormVisible"
+      v-model="dialogFormVisible"
       @close="DialogClosed"
     >
       <el-form :model="form" ref="FormRef">
@@ -48,9 +48,7 @@
           ></el-input>
         </el-form-item>
         <el-form-item label="重复事件" label-width="110px">
-          <el-checkbox-group v-model="form.more">
-            <el-checkbox label="是" name="type"></el-checkbox>
-          </el-checkbox-group>
+          <el-checkbox label="是" name="type" v-model="form.more"></el-checkbox>
         </el-form-item>
         <el-form v-show="form.more" label="重复事件">
           <el-form-item label="重复类型" label-width="110px">
@@ -92,412 +90,399 @@
   </div>
 </template>
   
-  <script>
+<script setup>
 // 引入已经安装好的，项目中所需要的 FullCalendar 插件
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import listPlugin from '@fullcalendar/list'
-import rrulePlugin from '@fullcalendar/rrule'
+import { ElMessage, ElNotification } from "element-plus";
+import FullCalendar from "@fullcalendar/vue3";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import listPlugin from "@fullcalendar/list";
+import rrulePlugin from "@fullcalendar/rrule";
 import axios from "axios";
-import moment from 'moment'
-export default {
-  name: "my-calendar",
-  components: {
-    FullCalendar
+import moment from "moment";
+import { ref, onMounted } from "vue";
+import { useStore } from "vuex"; // 导入 useStore 函数
+
+const store = useStore(); // 获取 store 对象
+
+const form = ref({
+  user_id: "",
+  id: null, //事件id
+  title: "", //事件标题
+  area: "", //地点
+  detail: "", //描述
+  duration: "10:00", //事件持续时间
+  more: false, //是否为周期时间 默认为false
+  rrule: {
+    freq: "weekly", //rrule是周期时间的一个对象 freq为按xx为周期有['weekly','monthly','yearly']
+    interval: 1, //周期循环的间隔,1就是没有间隔 2就是隔一个周期加一个时间
+    dtstart: "2024-02-13T00:15:00Z", //开始时间
+    until: "2025-02-10T11:30:00Z", // 周期事件结束时间,空的时候就是无限周期
+    count: 1, //周期循环几次,1的时候代表循环一次就是普通事件,""的时候就是周期事件
   },
-  data() {
-    return {
-      // 日历配置参数
-      calendarOptions: {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin, rrulePlugin,],
-        // 日历头部按钮位置
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth, timeGridWeek, timeGridDay'
-        },
-        // 日历头部按钮中文转换
-        buttonText: {
-          today: '今天',
-          month: '月',
-          week: '周',
-          day: '天'
-        },
+});
+const userid = ref("");
+const calendarEventDrop = ref((info) => {
+  dropEvent(info);
+});
+const calendarEvents = ref([
+  {
+    id: 1,
+    title: "周事件",
+    area: "北京",
+    detail: "大商家",
+    more: true,
+    duration: "1:00",
+    rrule: {
+      freq: "weekly",
+      interval: 1,
+      dtstart: "2024-02-13T00:00:00",
+      until: "2025-02-10T11:30:00",
+      count: "",
+    },
+  },
+  {
+    id: 2,
+    title: "月事件",
+    area: "北京",
+    detail: "大商家",
+    duration: "8:00",
+    rrule: {
+      freq: "monthly",
+      interval: 1,
+      // bymonthday:[7],//如果不加就按每月的这一天开始算
+      dtstart: "2024-02-10T10:30:00", // will also accept '20120201T103000'
+      until: "2024-06-01", // will also accept '20120201'
+    },
+    more: true,
+  },
+  {
+    id: 3,
+    title: "年事件",
+    duration: "8:00",
+    more: true,
+    rrule: {
+      freq: "yearly",
+      interval: 1,
+      // byyearday:[7],
+      dtstart: "2024-02-19T10:30:00", // will also accept '20120201T103000'
+      until: "2025-06-01", // will also accept '20120201'
+    },
+  },
+  {
+    id: 4,
+    title: "节假日",
+    duration: "8:00",
+    area: "北京",
+    detail: "大商家",
+    more: false,
+    rrule: {
+      count: 1,
+      freq: "weekly",
+      interval: 1,
+      // bymonthday: ['mo'],
+      dtstart: "2024-02-02T10:30:00", // will also accept '20120201T103000'
+      until: "2050-06-01", // will also accept '20120201'
+    },
+  },
+  {
+    id: 5,
+    title: "K日",
+    duration: "8:00",
+    area: "北京",
+    detail: "大商家",
+    more: false,
+    rrule: {
+      count: 1,
+      freq: "weekly",
+      interval: 1,
+      // bymonthday: ['mo'],
+      dtstart: "2024-02-02T10:30:00", // will also accept '20120201T103000'
+      until: "2050-06-01",
+    },
+  },
+  {
+    id: 6,
+    title: "双休日",
+    area: "北京",
+    duration: "8:00",
+    detail: "大商家",
+    more: false,
+    rrule: {
+      count: 1,
+      freq: "weekly",
+      interval: 1,
+      // bymonthday: ['mo'],
+      dtstart: "2024-02-02T10:30:00", // will also accept '20120201T103000'
+      until: "2050-06-01",
+    },
+  },
+]);
+const optTitle = ref("添加事件");
+const dialogFormVisible = ref(false);
 
-        initialView: 'dayGridMonth', // 指定默认显示视图
-        firstDay: '1',
-        weekNumberCalculation: 'ISO', // 与firstDay配套使用
-        eventColor: '#3d8eec', // 全部日历日程背景色
-        // timeGridEventMinHeight: '20', // 设置事件的最小高度
-        aspectRatio: '2.2', // 设置日历单元格宽高比
-        displayEventTime: true, // 是否显示事件时间
-        allDaySlot: false, // 周、日视图时，all-day不显示
-        // eventLimit: true, // 设置月日程，与all-day slot 的最大显示数量，超过的通过弹窗展示
-        eventTimeFormat: {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: false
-        },
-        slotLabelFormat: {
-          hour: '2-digit',
-          minute: '2-digit',
-          meridiem: false,
-          hour12: false // 设置时间为24小时制
-        },
-        locale: 'zh-cn',
-        eventTimeFormat: {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        },
-        events: [],
-        editable: false, // 是否可以进行（拖动、缩放）修改
-        eventStartEditable: false, // Event日程开始时间可以改变，默认为true，若为false,则表示开始结束时间范围不能拉伸，只能拖拽
-        eventDurationEditable: false, // Event日程的开始结束时间距离是否可以改变，默认为true,若为false，则表示开始结束时间范围不能拉伸，只能拖拽
-        selectable: true, // 是否可以选中日历格
-        selectMirror: true,
-        selectMinDistance: 0, // 选中日历格的最小距离
-        weekends: true,
-        navLinks: true, // 天链接
-        // selectHelper: false,
-        // selectEventOverlap: false, // 相同时间段的多个日程视觉上是否允许重叠，默认为true，允许
-        dayMaxEvents: true,
-        dateClick: this.handleDateClick, // 日期点击
-        eventsSet: this.handleEvents, // 事件点击
-        eventClick: this.handleEventClick, // 日程点击信息展示
-        eventDrop: this.handleEventDrop, // 日程拖动事件
-        eventResize: this.eventResize, // 日程缩放事件
+//启动测试
+const getlist = async () => {
+  userid.value = store.getters.getUserId;
+  //先拿id
+  const { data: res } = await axios.post("/get_event", {
+    user_id: userid.value,
+  }); //发请求
+  // console.log('请求结果', res)
+  if (res.code !== 200) {
+    return ElMessage.error(res.msg);
+  }
 
-      },
-      form: {
-        user_id: '',
-        id: null,//事件id
-        title: '',//事件标题
-        area: "",//地点
-        detail: '',//描述
-        duration: '10:00',//事件持续时间
-        more: false,//是否为周期时间 默认为false
-        rrule: {
-          freq: 'weekly', //rrule是周期时间的一个对象 freq为按xx为周期有['weekly','monthly','yearly']
-          interval: 1,  //周期循环的间隔,1就是没有间隔 2就是隔一个周期加一个时间
-          dtstart: '2024-02-13T00:15:00Z', //开始时间
-          until: '2025-02-10T11:30:00Z', // 周期事件结束时间,空的时候就是无限周期
-          count: 1 //周期循环几次,1的时候代表循环一次就是普通事件,""的时候就是周期事件
-        }
-      },
-      userid: '',
-      calendarEvents: [
-        {
-          id: 1,
-          title: '周事件',
-          area: "北京",
-          detail: '大商家',
-          more: true,
-          duration: '1:00',
-          rrule: {
-            freq: 'weekly',
-            interval: 1,
-            dtstart: '2024-02-13T00:00:00',
-            until: '2025-02-10T11:30:00',
-            count: ''
-          },
-        },
-        {
-          id: 2,
-          title: '月事件',
-          area: "北京",
-          detail: '大商家',
-          duration: '8:00',
-          rrule: {
-            freq: 'monthly',
-            interval: 1,
-            // bymonthday:[7],//如果不加就按每月的这一天开始算
-            dtstart: '2024-02-10T10:30:00', // will also accept '20120201T103000'
-            until: '2024-06-01' // will also accept '20120201'
-          },
-          more: true,
+  calendarEvents.value = res.data;
+  calendarOptions.value.events = calendarEvents.value;
+  ElNotification.closeAll();
 
-        },
-        {
-          id: 3,
-          title: '年事件',
-          duration: '8:00',
-          more: true,
-          rrule: {
-            freq: 'yearly',
-            interval: 1,
-            // byyearday:[7],
-            dtstart: '2024-02-19T10:30:00', // will also accept '20120201T103000'
-            until: '2025-06-01' // will also accept '20120201'
-          }
-        }
-        , {
-          id: 4,
-          title: '节假日',
-          duration: '8:00',
-          area: "北京",
-          detail: '大商家',
-          more: false,
-          rrule: {
-            count: 1,
-            freq: 'weekly',
-            interval: 1,
-            // bymonthday: ['mo'],
-            dtstart: '2024-02-02T10:30:00', // will also accept '20120201T103000'
-            until: '2050-06-01' // will also accept '20120201'
-          }
-        },
-        {
-          id: 5,
-          title: 'K日',
-          duration: '8:00',
-          area: "北京",
-          detail: '大商家',
-          more: false,
-          rrule: {
-            count: 1,
-            freq: 'weekly',
-            interval: 1,
-            // bymonthday: ['mo'],
-            dtstart: '2024-02-02T10:30:00', // will also accept '20120201T103000'
-            until: '2050-06-01'
-          }
-        },
-        {
-          id: 6,
-          title: '双休日',
-          area: "北京",
-          duration: '8:00',
-          detail: '大商家',
-          more: false,
-          rrule: {
-            count: 1,
-            freq: 'weekly',
-            interval: 1,
-            // bymonthday: ['mo'],
-            dtstart: '2024-02-02T10:30:00', // will also accept '20120201T103000'
-            until: '2050-06-01'
-          }
-        },
-      ],
+  mynotify();
+};
 
-      calendarEventDrop: info => {
-        this.dropEvent(info);
-      },
+const handleEvents = (info) => {};
 
-      optTitle: '添加事件',
-      dialogFormVisible: false,
-
+// 日期点击
+const handleDateClick = (selectInfo) => {
+  // console.log(selectInfo.dateStr)
+  if (confirm("您是否要在【" + selectInfo.dateStr + "】添加一个新的事件？")) {
+    //数据初始化
+    optTitle.value = "新增事件";
+    form.value.title = "";
+    form.value.id = "";
+    form.value.duration = "10:00";
+    let durationArr = form.value.duration.split(":");
+    form.value.duration = parseInt(durationArr[0], 10);
+    form.value.area = "";
+    form.value.detail = "";
+    form.value.more = false;
+    // 创建一个正则表达式，用于匹配日期字符串中是否包含字母 T
+    let regex = new RegExp("T");
+    if (regex.test(selectInfo.dateStr)) {
+      form.value.rrule.dtstart = selectInfo.dateStr;
+    } else {
+      form.value.rrule.dtstart = selectInfo.dateStr + "T08:00:00+08:00";
     }
-  },
-  mounted() {
-    // this.mynotify();
-    this.getlist();
+    form.value.rrule.freq = "weekly";
+    form.value.rrule.interval = 1;
+    form.value.rrule.until = "";
+    dialogFormVisible.value = true;
+  }
+};
 
-  },
-  created() {
-    
-    this.$notify.closeAll();
-    // this.getlist();
-
-
-  },
-  methods: {
-    //启动测试
-    async getlist() {
-      this.userid = this.$store.getters.getUserId;
-       //先拿id
-      const { data: res } = await axios.post("/get_event", {
-        user_id: this.userid
-      });//发请求
-      // console.log('请求结果', res)
-      if (res.code !== 200) {
-        return this.$message.error(res.msg)
+// 日程点击信息展示
+const handleEventClick = (info) => {
+  // console.log("事件点击:", info);
+  info.el.style.borderColor = "red";
+  dialogFormVisible.value = true;
+  optTitle.value = "修改事件";
+  calendarEvents.value.forEach((item, index, arr) => {
+    if (item.id == info.event.id) {
+      form.value = item;
+      if (typeof form.value.duration != "number") {
+        let durationArr = form.value.duration.split(":");
+        form.value.duration = parseInt(durationArr[0], 10);
       }
-      // this.$message.success(res.msg)
-      this.calendarEvents = res.data
-      this.calendarOptions.events = this.calendarEvents
-      this.$notify.closeAll();
-      // console.log(this.calendarOptions.events)
-      this.mynotify();
-    },
+    }
+  });
+};
+// 日程拖动事件
+const handleEventDrop = (info) => {
+  form.value = {
+    id: info.event.id,
+    title: info.event.title,
+    start: info.event.startStr,
+    end: info.event.endStr,
+    area: info.event._def.extendedProps.area,
+    detail: info.event._def.extendedProps.detail,
+  };
+  saveEvent();
+};
+// 日程缩放事件
+const eventResize = (info) => {
+  form.value = {
+    id: info.event.id,
+    title: info.event.title,
+    start: info.event.startStr,
+    end: info.event.endStr,
+    area: info.event._def.extendedProps.area,
+    detail: info.event._def.extendedProps.detail,
+  };
+  saveEvent();
+  // console.log(form.value)
+};
+//保存事件
+const saveEvent = async () => {
+  form.value.user_id = userid.value;
+  //判断是否为周期事件
+  if (form.value.more == false) {
+    form.value.rrule.count = 1;
+  } else {
+    // console.log("是周期事件")
+    delete form.value.rrule.count;
+  }
+  //将持续时间字段格式化
+  // if (typeof form.value.duration === "number") {
+  //   form.value.duration = form.value.duration.toString() + ":00";
+  // }
 
-    handleEvents(info) {
+  if (form.value.rrule.until === "") {
+    // console.log("触发了",delete form.value.rrule.until)
+    delete form.value.rrule.until;
+  }
+  // console.log('新增form', form.value)
+  if (form.value.id === undefined || form.value.id == "") {
+    //新增
+    // form.value.id = res.id;
+    const { data: res } = await axios.post("/add_event", 
+  {
+    ...form.value,
+    duration: form.value.duration.toString() + ":00"
+  });
+    if (res.code !== 200) {
+      return ElMessage.error(res.msg);
+    }
+    ElMessage.success(res.msg);
+  } else {
+    //修改
+    const { data: res } = await axios.post("/update_event", {
+    ...form.value,
+    duration: form.value.duration.toString() + ":00"
+  });
+    // console.log(res)
+    if (res.code !== 200) {
+      return ElMessage.error(res.msg);
+    }
+    ElMessage.success(res.msg);
+  }
+  dialogFormVisible.value = false;
+  getlist();
+};
 
-    },
-
-    // 日期点击
-    handleDateClick(selectInfo) {
-      // console.log(selectInfo.dateStr)
-      if (confirm('您是否要在【' + selectInfo.dateStr + '】添加一个新的事件？')) {
-        //数据初始化
-        this.optTitle = '新增事件';
-        this.form.title = '';
-        this.form.id = '';
-        this.form.duration = '10:00'
-        let durationArr = this.form.duration.split(':');
-        this.form.duration = parseInt(durationArr[0], 10);
-        this.form.area = ''
-        this.form.detail = ''
-        this.form.more = false
-        // 创建一个正则表达式，用于匹配日期字符串中是否包含字母 T
-        let regex = new RegExp('T');
-        if (regex.test(selectInfo.dateStr)) {
-          this.form.rrule.dtstart = selectInfo.dateStr
-        } else {
-          this.form.rrule.dtstart = selectInfo.dateStr + 'T08:00:00+08:00'
-        }
-        this.form.rrule.freq = 'weekly'
-        this.form.rrule.interval = 1
-        this.form.rrule.until = ''
-        this.dialogFormVisible = true;
-      }
-    },
-
-    // 日程点击信息展示
-    handleEventClick(info) {
-      // console.log('事件点击:', info)
-      info.el.style.borderColor = 'red'
-      this.dialogFormVisible = true;
-      this.optTitle = '修改事件';
-      this.calendarEvents.forEach((item, index, arr) => {
-        if (item.id == info.event.id) {
-          this.form = item
-          if (typeof this.form.duration != 'number') {
-            let durationArr = this.form.duration.split(':');
-            this.form.duration = parseInt(durationArr[0], 10);
-          }
-
-        }
+//弹窗
+const myCalendar = ref(null);
+const mynotify = async () => {
+  let calendarApi = myCalendar.value.getApi();
+  let Events = calendarApi.getEvents();
+  let hasRecentEvent = false; // 定义一个变量，表示是否有近期活动
+  let time = moment().format("YYYY-MM-DDTHH:mm:ss");
+  // console.log('所有事件', Events);
+  for (let event of Events) {
+    // 创建一个新的 Date 对象，表示当前系统时间
+    let now = new Date(time);
+    let nowstamp = now.getTime(); //当前时间戳
+    let startstamp = event.start.getTime(); //事件开始时间戳
+    let endstamp = event.end.getTime(); //事件结束时间戳
+    let minutesDifference = (startstamp - nowstamp) / (1000 * 60); //事件开始时间-当前时间
+    if (minutesDifference <= 30 && minutesDifference > 0) {
+      ElNotification({
+        title: "提示",
+        message: event.title + "活动即将开始",
+        type: "warning",
+        duration: 5000,
+        customClass: "mynotify",
       });
-    },
-    // 日程拖动事件
-    handleEventDrop(info) {
-      this.form = {
-        id: info.event.id,
-        title: info.event.title,
-        start: info.event.startStr,
-        end: info.event.endStr,
-        area: info.event._def.extendedProps.area,
-        detail: info.event._def.extendedProps.detail,
-      };
-      this.saveEvent();
-    },
-    // 日程缩放事件
-    eventResize(info) {
-      this.form = {
-        id: info.event.id,
-        title: info.event.title,
-        start: info.event.startStr,
-        end: info.event.endStr,
-        area: info.event._def.extendedProps.area,
-        detail: info.event._def.extendedProps.detail,
-      };
-      this.saveEvent();
-      // console.log(this.form)
-    },
-    //保存事件
-    async saveEvent() {
-      this.form.user_id = this.userid
-      //判断是否为周期事件
-      if (this.form.more == false) {
-        this.form.rrule.count = 1
-      } else {
-        // console.log("是周期事件")
-        delete this.form.rrule.count
-      }
-      //将持续时间字段格式化
-      if (typeof this.form.duration === 'number') {
-        this.form.duration = this.form.duration.toString() + ':00'
-
-      }
-
-      if (this.form.rrule.until === "") {
-        // console.log("触发了",delete this.form.rrule.until)
-        delete this.form.rrule.until;
-      }
-      // console.log('新增form', this.form)
-      if (this.form.id === undefined || this.form.id == '') {
-        //新增
-        // this.form.id = res.id;
-        const { data: res } = await axios.post("/add_event", this.form);
-        if (res.code !== 200) {
-          return this.$message.error(res.msg)
-        }
-        this.$message.success(res.msg)
-      } else { //修改
-        const { data: res } = await axios.post("/update_event", this.form);
-        // console.log(res)
-        if (res.code !== 200) {
-          return this.$message.error(res.msg)
-        }
-        this.$message.success(res.msg)
-      }
-      this.dialogFormVisible = false;
-      this.getlist()
-
-    },
-
-    //弹窗
-    async mynotify() {
-
-      let calendarApi = this.$refs.myCalendar.getApi();
-      let Events = calendarApi.getEvents()
-      let hasRecentEvent = false; // 定义一个变量，表示是否有近期活动
-      let time = moment().format('YYYY-MM-DDTHH:mm:ss');
-      // console.log('所有事件', Events);
-      for (let event of Events) {
-        // 创建一个新的 Date 对象，表示当前系统时间
-        let now = new Date(time);
-        let nowstamp = now.getTime();//当前时间戳
-        let startstamp = event.start.getTime();//事件开始时间戳
-        let endstamp = event.end.getTime();//事件结束时间戳
-        let minutesDifference = (startstamp - nowstamp) / (1000 * 60);//事件开始时间-当前时间
-        if (minutesDifference <= 30 && minutesDifference > 0) {
-
-          await this.$notify({
-            title: '提示',
-            message: event.title + '活动即将开始',
-            type: 'warning',
-            duration: 5000,
-            customClass: "mynotify"
-          });
-          hasRecentEvent = true; // 将 hasRecentEvent 设置为 true
-        } else if (startstamp < nowstamp && nowstamp < endstamp) {
-
-          await this.$notify({
-            title: '提示',
-            message: event.title + '活动已经开始',
-            type: 'warning',
-            duration: 5000,
-            customClass: "mynotify"
-          });
-          hasRecentEvent = true; // 将 hasRecentEvent 设置为 true
-        }
-      }
-    },
-    async delEvent() {
-      const { data: res } = await axios.post("/del_event", { id: this.form.id });
-      if (res.code !== 200) {
-        return this.$message.error(res.msg)
-      }
-      this.$message.success(res.msg)
-      this.dialogFormVisible = false;
-      this.$notify.closeAll();
-      this.getlist()
-    },
-    DialogClosed() {
-      // console.log('guan')
-      this.$refs.FormRef.resetFields();
-      this.$notify.closeAll();
-      this.getlist()
-    },
-
+      hasRecentEvent = true; // 将 hasRecentEvent 设置为 true
+    } else if (startstamp < nowstamp && nowstamp < endstamp) {
+      ElNotification({
+        title: "提示",
+        message: event.title + "活动已经开始",
+        type: "warning",
+        duration: 5000,
+        customClass: "mynotify",
+      });
+      hasRecentEvent = true; // 将 hasRecentEvent 设置为 true
+    }
+  }
+};
+const delEvent = async () => {
+  const { data: res } = await axios.post("/del_event", { id: form.value.id });
+  if (res.code !== 200) {
+    return ElMessage.error(res.msg);
+  }
+  ElMessage.success(res.msg);
+  dialogFormVisible.value = false;
+  ElNotification.closeAll();
+  getlist();
+};
+const FormRef = ref(null);
+const DialogClosed = () => {
+  // console.log('guan')
+  FormRef.value.resetFields();
+  ElNotification.closeAll();
+  getlist();
+};
+const calendarOptions = ref({
+  plugins: [
+    dayGridPlugin,
+    timeGridPlugin,
+    interactionPlugin,
+    listPlugin,
+    rrulePlugin,
+  ],
+  // 日历头部按钮位置
+  headerToolbar: {
+    left: "prev,next today",
+    center: "title",
+    right: "dayGridMonth, timeGridWeek, timeGridDay",
+  },
+  // 日历头部按钮中文转换
+  buttonText: {
+    today: "今天",
+    month: "月",
+    week: "周",
+    day: "天",
   },
 
-}
+  initialView: "dayGridMonth", // 指定默认显示视图
+  firstDay: "1",
+  weekNumberCalculation: "ISO", // 与firstDay配套使用
+  eventColor: "#3d8eec", // 全部日历日程背景色
+  // timeGridEventMinHeight: '20', // 设置事件的最小高度
+  aspectRatio: "2.2", // 设置日历单元格宽高比
+  displayEventTime: true, // 是否显示事件时间
+  allDaySlot: false, // 周、日视图时，all-day不显示
+  // eventLimit: true, // 设置月日程，与all-day slot 的最大显示数量，超过的通过弹窗展示
+  eventTimeFormat: {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: false,
+  },
+  slotLabelFormat: {
+    hour: "2-digit",
+    minute: "2-digit",
+    meridiem: false,
+    hour12: false, // 设置时间为24小时制
+  },
+  locale: "zh-cn",
+  eventTimeFormat: {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  },
+  events: [],
+  editable: false, // 是否可以进行（拖动、缩放）修改
+  eventStartEditable: false, // Event日程开始时间可以改变，默认为true，若为false,则表示开始结束时间范围不能拉伸，只能拖拽
+  eventDurationEditable: false, // Event日程的开始结束时间距离是否可以改变，默认为true,若为false，则表示开始结束时间范围不能拉伸，只能拖拽
+  selectable: true, // 是否可以选中日历格
+  selectMirror: true,
+  selectMinDistance: 0, // 选中日历格的最小距离
+  weekends: true,
+  navLinks: true, // 天链接
+  // selectHelper: false,
+  // selectEventOverlap: false, // 相同时间段的多个日程视觉上是否允许重叠，默认为true，允许
+  dayMaxEvents: true,
+  dateClick: handleDateClick, // 日期点击
+  eventsSet: handleEvents, // 事件点击
+  eventClick: handleEventClick, // 日程点击信息展示
+  eventDrop: handleEventDrop, // 日程拖动事件
+  eventResize: eventResize, // 日程缩放事件
+});
+onMounted(() => {
+  getlist();
+  ElNotification.closeAll();
+});
 </script>
 <style lang="less">
 // .mynotify {

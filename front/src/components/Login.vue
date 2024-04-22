@@ -154,12 +154,10 @@ const resetLoginFORM = () => {
 const login = () => {
   loginFORMRef.value.validate(async (valid) => {
     if (!valid) return;
-    console.log(loginFORM.value);
-
     const { data: res } = await axios.post("/login", loginFORM.value);
     // console.log(res)
     if (res.code == 200) {
-      console.log(res);
+      // console.log(res);
       ElMessage.success(res.msg);
       // console.log(typeof res.role)
       //1.将登录成功后的token，保存到客户端的sessionStorage中
@@ -173,7 +171,7 @@ const login = () => {
       //2 通过编程式导航跳转到后台主页，路由地址/Home
       router.push("/home");
     } else if (res.code == 500) {
-      console.log(res);
+      // console.log(res);
       return ElMessage.error(res.msg);
     }
   });

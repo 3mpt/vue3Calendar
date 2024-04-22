@@ -68,12 +68,10 @@
               <el-button
                 type="primary"
                 icon="el-icon-edit"
-                size="mini"
                 @click="showEditDialog(scope.row.id)"
                 >修改信息</el-button
               >
               <!-- 删除按钮 -->
-
               <el-switch
                 v-model="scope.row.status"
                 @change="StateChanged(scope.row.id)"

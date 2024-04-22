@@ -86,7 +86,6 @@
               <el-button
                 type="primary"
                 icon="Edit"
-                size="medium"
                 @click="showEditDialog(scope.row)"
                 >修改信息</el-button
               >

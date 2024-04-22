@@ -46,15 +46,14 @@
             >
               <template #title>
                 <el-icon :size="20">
-                <Menu/>
-              </el-icon>
+                  <Menu />
+                </el-icon>
                 <span>{{ subItem.authName }}</span>
               </template>
             </el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
-
       <el-main>
         <!-- 路由占位符 -->
         <router-view></router-view>
@@ -63,104 +62,96 @@
   </el-container>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      menulist: [
-        {
-          authName: "电子日历",
-          id: "145",
-          role: [1, 0],
-          children: [
-            {
-              authName: "日历查看",
-              path: "welcome",
-            },
-          ],
-        },
-        {
-          authName: "用户管理",
-          role: [1],
-          id: "125",
-          children: [
-            {
-              authName: "用户列表",
-              path: "user",
-            },
-          ],
-        },
-        {
-          authName: "事件管理",
-          role: [1],
-          id: "103",
-          children: [
-            {
-              authName: "事件列表",
-              path: "even",
-            },
-          ],
-        },
-      ],
-      iconObj: {
-        125: "UserFilled",
-        103: "Notebook",
-        101: "UserFilled",
-        102: "UserFilled",
-        145: "Calendar",
-        110: "UserFilled",
+<script setup>
+import { computed, onMounted, ref } from "vue";
+import { useStore } from "vuex"; // 导入 useStore 函数
+import { useRouter } from "vue-router"; // 导入 useRouter 函数
+import { ElMessage, ElNotification } from "element-plus";
+const store = useStore(); // 获取 store 对象
+const router = useRouter();
+const menulist = ref([
+  {
+    authName: "电子日历",
+    id: "145",
+    role: [1, 0],
+    children: [
+      {
+        authName: "日历查看",
+        path: "welcome",
       },
-      isCollapse: false,
-      //被激活的链接地址
-      activePath: "",
-      userid: NaN,
-      userInfo: {},
-      username: "",
-      role: 0,
-    };
+    ],
   },
-  created() {
-    this.getUserId();
-    this.filteredSubList;
-    this.activePath = window.sessionStorage.getItem("activePath");
+  {
+    authName: "用户管理",
+    role: [1],
+    id: "125",
+    children: [
+      {
+        authName: "用户列表",
+        path: "user",
+      },
+    ],
   },
-  methods: {
-    getUserId() {
-      this.userid = this.$store.getters.getUserId;
-      this.role = this.$store.getters.getUserRole;
-    },
-    async logout() {
-      this.$notify.closeAll();
-      this.$message.success("成功退出登录");
-      window.sessionStorage.clear();
-      this.$store.commit("setUserRole", "");
-      this.$store.commit("setUserId", "");
-      this.$router.push("/login");
-    },
-    /* 点击按钮切换折叠和展开 */
-    toggleCollapse() {
-      this.isCollapse = !this.isCollapse;
-    },
-    //保存链接的激活状态
-    saveNavState(activePath) {
-      this.$notify.closeAll();
-      window.sessionStorage.setItem("activePath", activePath);
-      this.activePath = activePath;
-    },
+  {
+    authName: "事件管理",
+    role: [1],
+    id: "103",
+    children: [
+      {
+        authName: "事件列表",
+        path: "even",
+      },
+    ],
+  },
+]);
+const iconObj = ref({
+  125: "UserFilled",
+  103: "Notebook",
+  101: "UserFilled",
+  102: "UserFilled",
+  145: "Calendar",
+  110: "UserFilled",
+});
+const isCollapse = ref(false);
+const activePath = ref("");
+const userid = ref(NaN);
+const username = ref("");
+const role = ref(0);
 
-    filteredSubItems(children) {
-      // return children.filter(subItem => this.checkRole(subItem.role));
-      return children;
-    },
-  },
-
-  mounted() {},
-  computed: {
-    filteredMenuList() {
-      return this.menulist.filter((item) => item.role.includes(this.role));
-    },
-  },
+const getUserId = () => {
+  userid.value = store.getters.getUserId;
+  role.value = store.getters.getUserRole;
 };
+//退出登录
+const logout = () => {
+  ElNotification.closeAll();
+  ElMessage.success("成功退出登录");
+  window.sessionStorage.clear();
+  store.commit("setUserRole", "");
+  store.commit("setUserId", "");
+  router.push("/login");
+};
+/* 点击按钮切换折叠和展开 */
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value;
+};
+//保存链接的激活状态
+const saveNavState = (activePath) => {
+  ElNotification.closeAll();
+  window.sessionStorage.setItem("activePath", activePath);
+
+};
+const filteredSubItems = (children) => {
+  // return children.filter(subItem => this.checkRole(subItem.role));
+  return children;
+};
+const filteredMenuList = computed(() => {
+  return menulist.value.filter((item) => item.role.includes(role.value));
+});
+onMounted(() => {
+  getUserId();
+  activePath.value = window.sessionStorage.getItem("activePath");
+});
 </script>
 
 <style lang="less" scoped>

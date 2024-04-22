@@ -129,7 +129,7 @@ export default {
       this.userid = this.$store.getters.getUserId;
       this.role = this.$store.getters.getUserRole;
     },
-    async logout() {
+    logout() {
       this.$notify.closeAll();
       this.$message.success("成功退出登录");
       window.sessionStorage.clear();
